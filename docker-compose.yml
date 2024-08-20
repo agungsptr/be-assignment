@@ -1,0 +1,49 @@
+networks:
+  concreteai:
+    name: concreteai
+    driver: bridge
+
+services:
+  db:
+    image: postgres:16.3
+    container_name: concreteai-db
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASS}
+    ports:
+      - ${PG_PORT}:5432
+    expose:
+      - ${PG_PORT}:5432
+    networks:
+      - concreteai
+
+  supertokens:
+    image: registry.supertokens.io/supertokens/supertokens-mysql:9.1.2
+    container_name: concreteai-supertokens
+    restart: always
+    ports:
+      - 3567:3567
+    expose:
+      - 3567:3567
+    networks:
+      - concreteai
+
+  be:
+    image: agungsptr/concreteai-be:${TAG}
+    container_name: concreteai-be
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - SUPERTOKENS_HOST=supertokens
+    ports:
+      - 8000:8000
+    networks:
+      - concreteai
+    # depends_on:
+    #   - db
+    #   - supertokens
+    command: ["pm2-runtime", "start","/src/ecosystem.config.json"]
